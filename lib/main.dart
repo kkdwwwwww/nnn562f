@@ -358,7 +358,31 @@ class _WPState extends State<WP> with SingleTickerProviderStateMixin {
           ],),
           SizedBox(height: 50,),
           SizedBox(height: 200,width: 300,child: AnimatedBuilder(animation: _controller, builder: (context, _) => CustomPaint(size: Size(MediaQuery.of(context).size.width, 300),painter: LineCharPainter(data,_controller.value,labels),)),),
-          SizedBox(height: 20,)
+          SizedBox(height: 20,),
+          Row(mainAxisAlignment: MainAxisAlignment.center,children: [
+            Card(child: Padding(padding: EdgeInsets.all(20),child: Column(children: [
+              Text(" 總 步 數 ",style: TextStyle(fontSize: 28,fontWeight: FontWeight.bold),),
+              SizedBox(height: 20,),
+              Text("${core.steps.first+core.steps.last} 步",style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold),),
+            ],),),),
+            Card(child: Padding(padding: EdgeInsets.all(20),child: Column(children: [
+              Text(" 總 距 離 ",style: TextStyle(fontSize: 28,fontWeight: FontWeight.bold),),
+              SizedBox(height: 20,),
+              Text(core.steps.first+core.steps.last/500 >10 ? "${(core.steps.first+core.steps.last/500).toInt()} 公里" : "${(core.steps.first+core.steps.last/2).toInt()} 公尺" ,style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold),),
+            ],),),),
+          ],),
+          Row(mainAxisAlignment: MainAxisAlignment.center,children: [
+            Card(child: Padding(padding: EdgeInsets.all(20),child: Column(children: [
+              Text("平均步數",style: TextStyle(fontSize: 28,fontWeight: FontWeight.bold),),
+              SizedBox(height: 20,),
+              Text(_isWeek ? "${(core.week.reduce((a,b)=> a+b) / 7).toStringAsFixed(2)} 步" : "${(core.month.reduce((a,b)=> a+b) / 12).toStringAsFixed(2)} 步",style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold),),
+            ],),),),
+            Card(child: Padding(padding: EdgeInsets.all(20),child: Column(children: [
+              Text("消耗熱量",style: TextStyle(fontSize: 28,fontWeight: FontWeight.bold),),
+              SizedBox(height: 20,),
+              Text(core.steps.first+core.steps.last*0.03 > 10 ? "${(core.steps.first+core.steps.last*0.03).toInt()} kcal" : "${(core.steps.first+core.steps.last*30).toInt()} cal" ,style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold),),
+            ],),),),
+          ],)
         ],)
       ],),
     );
@@ -373,26 +397,26 @@ class LineCharPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if(data.isEmpty) return;
-    final double paddingBottom = 40.0;
-    final double paddingTop = 20.0;
-    final double ch = size.height - paddingTop - paddingBottom;
-    final paint = Paint()..strokeWidth = 3..style = PaintingStyle.stroke..strokeCap = StrokeCap.round..color = Colors.blue;
-    final dotpaint = Paint()..color=Colors.white..style = PaintingStyle.fill;
-    final dop = Paint()..strokeWidth = 2..style=  PaintingStyle.stroke;
-    final gP = Paint()..color=Colors.grey..strokeWidth = 1;
+    final double pb = 40;
+    final double pt = 20;
+    final double ch = size.height - pb - pt;
+    final paint = Paint()..color=Colors.blue..style=PaintingStyle.stroke..strokeCap=StrokeCap.round..strokeWidth=3;
+    final dotp = Paint()..color=Colors.white..style=PaintingStyle.fill;
+    final dot = Paint()..strokeWidth=2..style=PaintingStyle.stroke;
+    final gp = Paint()..color=Colors.grey..strokeWidth=1;
     final path = Path();
     double maxV = data.reduce(max);
-    if(maxV == 0) maxV = 5;
-    double dx = size.width/(data.length - 1);
+    if(maxV==0)maxV = 5;
+    double dx = size.width/(data.length-1);
     List<Offset> points = [];
     for(int i =0;i<=4;i++){
-      double y = paddingTop + (ch * (1-i/4));
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gP );
-      _drawText(canvas, "${(maxV*i/4).toInt()}", Offset(-20, y),color: Colors.grey);
+      double y = pt + (ch * (1-i/4));
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gp);
+      _drawText(canvas,"${(maxV*i/4).toInt()}",Offset(-20, y),color: Colors.grey);
     }
     for(int i=0;i<data.length;i++){
       double x = i*dx;
-      double y = paddingTop + ch - (data[i] * p / maxV * ch);
+      double y = pt + ch - (data[i] * p / maxV * ch);
       Offset cp = Offset(x, y);
       points.add(cp);
       if(i==0) path.moveTo(x, y);
@@ -401,21 +425,20 @@ class LineCharPainter extends CustomPainter {
     canvas.drawPath(path, paint);
     for(int i =0;i<points.length;i++){
       var p = points[i];
-      canvas.drawCircle(p, 4, dotpaint);
-      canvas.drawCircle(p, 4, dop);
-      _drawText(canvas,labels[i],Offset(points[i].dx, size.height),fontSize: 10,color: Colors.grey);
+      canvas.drawCircle(p, 4, dotp);
+      canvas.drawCircle(p, 4, dot);
+      _drawText(canvas, labels[i], Offset(points[i].dx, size.height),fontSize: 10,color: Colors.grey);
     }
   }
-
   @override
   bool shouldRepaint(LineCharPainter oldDelegate) => oldDelegate.p != p || oldDelegate.data != data;
 
-  void _drawText(Canvas canvas, String text, Offset center, {double fontSize = 10, Color color = Colors.black}) {
+  void _drawText(Canvas canvas, String s, Offset center, {double fontSize = 10,Color color = Colors.black}) {
     final tp = TextPainter(
-      text: TextSpan(text: text,style: TextStyle(color: color,fontSize: fontSize,fontWeight: FontWeight.bold)),
+      text: TextSpan(text: s,style: TextStyle(color: color,fontSize: fontSize,fontWeight: FontWeight.bold)),
       textDirection: TextDirection.ltr
     )..layout();
-    tp.paint(canvas, Offset(center.dx -tp.width / 2, center.dy - tp.height / 2));
+    tp.paint(canvas, Offset(center.dx -tp.width / 2, center.dy -tp.height/2));
   }
 }
 
